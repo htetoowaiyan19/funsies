@@ -10,7 +10,30 @@ function pad(num, size = 2) {
   return s;
 }
 
+function getDatePartsInTimeZone(date, timeZone) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+  }).formatToParts(date);
+
+  const values = {};
+  for (const part of parts) {
+    if (part.type === "year" || part.type === "month" || part.type === "day") {
+      values[part.type] = Number(part.value);
+    }
+  }
+
+  return {
+    year: values.year ?? 0,
+    month: values.month ?? 1,
+    day: values.day ?? 1,
+  };
+}
+
 export default function Dashboard() {
+  const OUTPUT_TIMEZONE = "Asia/Yangon";
   // Anniversary start date (UTC). Default is 2005-07-19 when no partner and no stored anniversary exists.
   const DEFAULT_ANNIVERSARY_ISO = "2005-07-19T00:00:00Z";
   const anniversary = useRef(new Date(DEFAULT_ANNIVERSARY_ISO).getTime());
@@ -98,21 +121,19 @@ export default function Dashboard() {
       const minutes = totalMinutes % 60;
       const hours = totalHours % 24;
 
-      const start = new Date(anniversary.current);
-      const nowDate = new Date(now);
+      const start = getDatePartsInTimeZone(new Date(anniversary.current), OUTPUT_TIMEZONE);
+      const nowDate = getDatePartsInTimeZone(new Date(now), OUTPUT_TIMEZONE);
 
-      let years = nowDate.getUTCFullYear() - start.getUTCFullYear();
-      let months = nowDate.getUTCMonth() - start.getUTCMonth();
-      let days = nowDate.getUTCDate() - start.getUTCDate();
+      let years = nowDate.year - start.year;
+      let months = nowDate.month - start.month;
+      let days = nowDate.day - start.day;
 
       if (days < 0) {
         months--;
-        const prevMonth = new Date(
-          nowDate.getUTCFullYear(),
-          nowDate.getUTCMonth(),
-          0,
-        );
-        days += prevMonth.getUTCDate();
+        const daysInPrevMonth = new Date(
+          Date.UTC(nowDate.year, nowDate.month - 1, 0),
+        ).getUTCDate();
+        days += daysInPrevMonth;
       }
 
       if (months < 0) {
