@@ -12,6 +12,7 @@ function pad(num, size = 2) {
 
 export default function Dashboard() {
   const OUTPUT_OFFSET_MS = (6 * 60 + 30) * 60 * 1000; // +06:30
+  const DAY_MS = 24 * 60 * 60 * 1000;
   // Anniversary start date (UTC). Default is 2005-07-19 when no partner and no stored anniversary exists.
   const DEFAULT_ANNIVERSARY_ISO = "2005-07-19T00:00:00Z";
   const anniversary = useRef(new Date(DEFAULT_ANNIVERSARY_ISO).getTime());
@@ -94,10 +95,13 @@ export default function Dashboard() {
       const totalMonths = Math.floor(totalDays / 30);
       const totalYears = Math.floor(totalDays / 365);
 
-      const ms = totalMs % 1000;
-      const seconds = totalSeconds % 60;
-      const minutes = totalMinutes % 60;
-      const hours = totalHours % 24;
+      // Shift only displayed clock fields by +06:30 using direct math.
+      const clockMs = ((totalMs % DAY_MS) + DAY_MS) % DAY_MS;
+      const shiftedClockMs = (clockMs + OUTPUT_OFFSET_MS) % DAY_MS;
+      const hours = Math.floor(shiftedClockMs / (1000 * 60 * 60));
+      const minutes = Math.floor((shiftedClockMs % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((shiftedClockMs % (1000 * 60)) / 1000);
+      const ms = shiftedClockMs % 1000;
 
       const start = new Date(anniversary.current + OUTPUT_OFFSET_MS);
       const nowDate = new Date(now + OUTPUT_OFFSET_MS);
